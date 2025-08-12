@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS marca (
   id   INT NOT NULL AUTO_INCREMENT,
   nome VARCHAR(100) NOT NULL,
   CONSTRAINT pk_marca PRIMARY KEY (id),
-  CONSTRAINT uq_marca__nome UNIQUE (nome)
+  CONSTRAINT uq_marca_nome UNIQUE (nome)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS categoria (
   nome VARCHAR(100) NOT NULL,
 
   CONSTRAINT pk_categoria PRIMARY KEY (id),
-  CONSTRAINT uq_categoria__nome UNIQUE (nome) -- Evita categorias duplicadas
+  CONSTRAINT uq_nome UNIQUE (nome) -- Evita categorias duplicadas
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -39,11 +39,11 @@ CREATE TABLE IF NOT EXISTS produto (
 
   CONSTRAINT pk_produto PRIMARY KEY (id),
 
-  CONSTRAINT fk_produto__id_marca__ref__marca
+  CONSTRAINT fk_produto_id_marca_ref_marca
     FOREIGN KEY (id_marca) REFERENCES marca(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
 
-  CONSTRAINT fk_produto__id_categoria__ref__categoria
+  CONSTRAINT fk_produto_categoria
     FOREIGN KEY (id_categoria) REFERENCES categoria(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
 
@@ -63,12 +63,12 @@ CREATE TABLE IF NOT EXISTS historico (
 
   CONSTRAINT pk_historico PRIMARY KEY (id),
 
-  CONSTRAINT fk_historico__id_produto__ref__produto
+  CONSTRAINT fk_historico_produto
     FOREIGN KEY (id_produto) REFERENCES produto(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
 
   -- impede duplicar preço do mesmo produto no mesmo dia (remova se quiser múltiplos por dia)
-  CONSTRAINT uq_historico__produto_data UNIQUE (id_produto, data),
+  CONSTRAINT uq_produto_data UNIQUE (id_produto, data),
 
   INDEX ix_historico_produto_data (id_produto, data)
 )
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS loja (
   logo_url VARCHAR(500) NOT NULL,     -- idem para link de imagem
 
   CONSTRAINT pk_loja PRIMARY KEY (id),
-  CONSTRAINT uq_loja__nome UNIQUE (nome)  -- evita lojas duplicadas
+  CONSTRAINT uq_nome UNIQUE (nome)  -- evita lojas duplicadas
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -103,11 +103,11 @@ CREATE TABLE IF NOT EXISTS preco (
 
   CONSTRAINT pk_preco PRIMARY KEY (id),
 
-  CONSTRAINT fk_preco__id_produto__ref__produto
+  CONSTRAINT fk_preco_produto
     FOREIGN KEY (id_produto) REFERENCES produto(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
 
-  CONSTRAINT fk_preco__id_loja__ref__loja
+  CONSTRAINT fk_preco_loja
     FOREIGN KEY (id_loja) REFERENCES loja(id)
     ON UPDATE CASCADE ON DELETE RESTRICT,
 
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS componente (
   descricao  TEXT NOT NULL,
 
   CONSTRAINT pk_componente PRIMARY KEY (id),
-  CONSTRAINT uq_componente__nome UNIQUE (nome) -- evita duplicação de componentes
+  CONSTRAINT uq_nome UNIQUE (nome) -- evita duplicação de componentes
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS caracteristica (
   valor VARCHAR(150) NOT NULL,
 
   CONSTRAINT pk_caracteristica PRIMARY KEY (id),
-  CONSTRAINT uq_caracteristica__tipo_valor UNIQUE (tipo, valor) 
+  CONSTRAINT uq_tipo_valor UNIQUE (tipo, valor) 
   -- evita duplicação de registros iguais
 )
 ENGINE=InnoDB
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS usuario (
   data_expiracao_senha     DATETIME NOT NULL,
 
   CONSTRAINT pk_usuario PRIMARY KEY (id),
-  CONSTRAINT uq_usuario__login UNIQUE (login) -- login único por usuário
+  CONSTRAINT uq_login UNIQUE (login) -- login único por usuário
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS reset_senha (
 
   CONSTRAINT pk_reset_senha PRIMARY KEY (id),
 
-  CONSTRAINT fk_reset_senha__id_usuario__ref__usuario
+  CONSTRAINT fk_reset_senha_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuario(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE -- ao excluir o usuário, exclui também seus tokens
@@ -190,17 +190,17 @@ CREATE TABLE IF NOT EXISTS lista_desejo (
 
   CONSTRAINT pk_lista_desejo PRIMARY KEY (id),
 
-  CONSTRAINT fk_lista_desejo__id_usuario__ref__usuario
+  CONSTRAINT fk_lista_desejo_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuario(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_lista_desejo__id_produto__ref__produto
+  CONSTRAINT fk_lista_desejo_produto
     FOREIGN KEY (id_produto) REFERENCES produto(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT uq_lista_desejo__usuario_produto UNIQUE (id_usuario, id_produto)
+  CONSTRAINT uq_usuario_produto UNIQUE (id_usuario, id_produto)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -214,17 +214,17 @@ CREATE TABLE IF NOT EXISTS alerta (
 
   CONSTRAINT pk_alerta PRIMARY KEY (id),
 
-  CONSTRAINT fk_alerta__id_produto__ref__produto
+  CONSTRAINT fk_alerta_produto
     FOREIGN KEY (id_produto) REFERENCES produto(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_alerta__id_usuario__ref__usuario
+  CONSTRAINT fk_alerta_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuario(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT uq_alerta__usuario_produto UNIQUE (id_usuario, id_produto)
+  CONSTRAINT uq_usuario_produto UNIQUE (id_usuario, id_produto)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -238,17 +238,17 @@ CREATE TABLE IF NOT EXISTS componente_produto (
 
   CONSTRAINT pk_componente_produto PRIMARY KEY (id),
 
-  CONSTRAINT fk_componente_produto__id_componente__ref__componente
+  CONSTRAINT fk_componente_produto_componente
     FOREIGN KEY (id_componente) REFERENCES componente(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_componente_produto__id_produto__ref__produto
+  CONSTRAINT fk_componente_produto_produto
     FOREIGN KEY (id_produto) REFERENCES produto(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT uq_componente_produto__componente_produto UNIQUE (id_componente, id_produto)
+  CONSTRAINT uq_componente_produto UNIQUE (id_componente, id_produto)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -262,17 +262,17 @@ CREATE TABLE IF NOT EXISTS componente_categoria (
 
   CONSTRAINT pk_componente_categoria PRIMARY KEY (id),
 
-  CONSTRAINT fk_componente_categoria__id_componente__ref__componente
+  CONSTRAINT fk_componente_categoria_componente
     FOREIGN KEY (id_componente) REFERENCES componente(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_componente_categoria__id_categoria__ref__categoria
+  CONSTRAINT fk_componente_categoria_categoria
     FOREIGN KEY (id_categoria) REFERENCES categoria(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT uq_componente_categoria__componente_categoria UNIQUE (id_componente, id_categoria)
+  CONSTRAINT uq_componente_categoria UNIQUE (id_componente, id_categoria)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -286,17 +286,17 @@ CREATE TABLE IF NOT EXISTS caracteristica_produto (
 
   CONSTRAINT pk_caracteristica_produto PRIMARY KEY (id),
 
-  CONSTRAINT fk_caracteristica_produto__id_caracteristica__ref__caracteristica
+  CONSTRAINT fk_caracteristica_produto_caracteristica
     FOREIGN KEY (id_caracteristica) REFERENCES caracteristica(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_caracteristica_produto__id_produto__ref__produto
+  CONSTRAINT fk_caracteristica_produto_produto
     FOREIGN KEY (id_produto) REFERENCES produto(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT uq_caracteristica_produto__caracteristica_produto UNIQUE (id_caracteristica, id_produto)
+  CONSTRAINT uq_caracteristica_produto UNIQUE (id_caracteristica, id_produto)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
@@ -310,17 +310,17 @@ CREATE TABLE IF NOT EXISTS caracteristica_categoria (
 
   CONSTRAINT pk_caracteristica_categoria PRIMARY KEY (id),
 
-  CONSTRAINT fk_caracteristica_categoria__id_caracteristica__ref__caracteristica
+  CONSTRAINT fk_caracteristica_categoria_caracteristica
     FOREIGN KEY (id_caracteristica) REFERENCES caracteristica(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_caracteristica_categoria__id_categoria__ref__categoria
+  CONSTRAINT fk_caracteristica_categoria_categoria
     FOREIGN KEY (id_categoria) REFERENCES categoria(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT uq_caracteristica_categoria__caracteristica_categoria UNIQUE (id_caracteristica, id_categoria)
+  CONSTRAINT uq_caracteristica_categoria UNIQUE (id_caracteristica, id_categoria)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
