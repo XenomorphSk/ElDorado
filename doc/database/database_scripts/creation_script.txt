@@ -1,0 +1,322 @@
+CREATE TABLE IF NOT EXISTS marca (
+  id   INT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+  CONSTRAINT pk_marca PRIMARY KEY (id),
+  CONSTRAINT uq_marca__nome UNIQUE (nome)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS categoria (
+  id   INT NOT NULL AUTO_INCREMENT,
+  nome VARCHAR(100) NOT NULL,
+
+  CONSTRAINT pk_categoria PRIMARY KEY (id),
+  CONSTRAINT uq_categoria__nome UNIQUE (nome) -- Evita categorias duplicadas
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS produto (
+  id                 INT NOT NULL AUTO_INCREMENT,
+  nome               VARCHAR(150) NOT NULL,
+  descricao          TEXT NOT NULL,
+  id_marca           INT NOT NULL,
+  id_categoria       INT NOT NULL,
+  imagem_url         TEXT NOT NULL,
+  data_criacao       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ultima_atualizacao DATETIME NOT NULL
+                       DEFAULT CURRENT_TIMESTAMP
+                       ON UPDATE CURRENT_TIMESTAMP,
+
+  CONSTRAINT pk_produto PRIMARY KEY (id),
+
+  CONSTRAINT fk_produto__id_marca__ref__marca
+    FOREIGN KEY (id_marca) REFERENCES marca(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+
+  CONSTRAINT fk_produto__id_categoria__ref__categoria
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+
+  INDEX ix_produto_marca (id_marca),
+  INDEX ix_produto_categoria (id_categoria)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS historico (
+  id          INT NOT NULL AUTO_INCREMENT,
+  id_produto  INT NOT NULL,
+  data        DATE NOT NULL,
+  preco       DECIMAL(10,2) NOT NULL,   -- preço: evite FLOAT para não ter erro de precisão
+
+  CONSTRAINT pk_historico PRIMARY KEY (id),
+
+  CONSTRAINT fk_historico__id_produto__ref__produto
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+
+  -- impede duplicar preço do mesmo produto no mesmo dia (remova se quiser múltiplos por dia)
+  CONSTRAINT uq_historico__produto_data UNIQUE (id_produto, data),
+
+  INDEX ix_historico_produto_data (id_produto, data)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS loja (
+  id       INT NOT NULL AUTO_INCREMENT,
+  nome     VARCHAR(100) NOT NULL,
+  link     VARCHAR(500) NOT NULL,     -- substitui TEXT, pois é mais eficiente para URLs
+  logo_url VARCHAR(500) NOT NULL,     -- idem para link de imagem
+
+  CONSTRAINT pk_loja PRIMARY KEY (id),
+  CONSTRAINT uq_loja__nome UNIQUE (nome)  -- evita lojas duplicadas
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS preco (
+  id              INT NOT NULL AUTO_INCREMENT,
+  id_produto      INT NOT NULL,
+  id_loja         INT NOT NULL,
+  preco_original  DECIMAL(10,2) NOT NULL,  -- trocado de FLOAT para evitar erros de precisão
+  preco_atual     DECIMAL(10,2) NOT NULL,
+  desconto        DECIMAL(5,2) DEFAULT NULL, -- percentual ou valor fixo, conforme regra
+  url_produto     VARCHAR(500) NOT NULL,     -- substitui TEXT para URLs
+  data_preco      DATE NOT NULL,
+
+  CONSTRAINT pk_preco PRIMARY KEY (id),
+
+  CONSTRAINT fk_preco__id_produto__ref__produto
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+
+  CONSTRAINT fk_preco__id_loja__ref__loja
+    FOREIGN KEY (id_loja) REFERENCES loja(id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+
+  INDEX ix_preco_produto_loja (id_produto, id_loja),
+  INDEX ix_preco_data (data_preco)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS componente (
+  id         INT NOT NULL AUTO_INCREMENT,
+  nome       VARCHAR(150) NOT NULL,
+  descricao  TEXT NOT NULL,
+
+  CONSTRAINT pk_componente PRIMARY KEY (id),
+  CONSTRAINT uq_componente__nome UNIQUE (nome) -- evita duplicação de componentes
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS caracteristica (
+  id    INT NOT NULL AUTO_INCREMENT,
+  tipo  VARCHAR(150) NOT NULL,
+  valor VARCHAR(150) NOT NULL,
+
+  CONSTRAINT pk_caracteristica PRIMARY KEY (id),
+  CONSTRAINT uq_caracteristica__tipo_valor UNIQUE (tipo, valor) 
+  -- evita duplicação de registros iguais
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS usuario (
+  id                       INT NOT NULL AUTO_INCREMENT,
+  login                    VARCHAR(100) NOT NULL,
+  senha                    TEXT NOT NULL,
+  nome                     VARCHAR(255) NOT NULL,
+  token_ativacao           VARCHAR(12) UNIQUE,
+  cad_confirmado           BOOLEAN NOT NULL DEFAULT FALSE,
+  data_expiracao_senha     DATETIME NOT NULL,
+
+  CONSTRAINT pk_usuario PRIMARY KEY (id),
+  CONSTRAINT uq_usuario__login UNIQUE (login) -- login único por usuário
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS reset_senha (
+  id               INT NOT NULL AUTO_INCREMENT,
+  id_usuario       INT NOT NULL,
+  token            VARCHAR(255) NOT NULL UNIQUE,
+  expiracao_token  DATETIME NOT NULL,
+
+  CONSTRAINT pk_reset_senha PRIMARY KEY (id),
+
+  CONSTRAINT fk_reset_senha__id_usuario__ref__usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE -- ao excluir o usuário, exclui também seus tokens
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS lista_desejo (
+  id               INT NOT NULL AUTO_INCREMENT,
+  id_usuario       INT NOT NULL,
+  id_produto       INT NOT NULL,
+  data_adicionado  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT pk_lista_desejo PRIMARY KEY (id),
+
+  CONSTRAINT fk_lista_desejo__id_usuario__ref__usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_lista_desejo__id_produto__ref__produto
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT uq_lista_desejo__usuario_produto UNIQUE (id_usuario, id_produto)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS alerta (
+  id          INT NOT NULL AUTO_INCREMENT,
+  id_produto  INT NOT NULL,
+  id_usuario  INT NOT NULL,
+
+  CONSTRAINT pk_alerta PRIMARY KEY (id),
+
+  CONSTRAINT fk_alerta__id_produto__ref__produto
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_alerta__id_usuario__ref__usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT uq_alerta__usuario_produto UNIQUE (id_usuario, id_produto)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS componente_produto (
+  id             INT NOT NULL AUTO_INCREMENT,
+  id_componente  INT NOT NULL,
+  id_produto     INT NOT NULL,
+
+  CONSTRAINT pk_componente_produto PRIMARY KEY (id),
+
+  CONSTRAINT fk_componente_produto__id_componente__ref__componente
+    FOREIGN KEY (id_componente) REFERENCES componente(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_componente_produto__id_produto__ref__produto
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT uq_componente_produto__componente_produto UNIQUE (id_componente, id_produto)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS componente_categoria (
+  id             INT NOT NULL AUTO_INCREMENT,
+  id_componente  INT NOT NULL,
+  id_categoria   INT NOT NULL,
+
+  CONSTRAINT pk_componente_categoria PRIMARY KEY (id),
+
+  CONSTRAINT fk_componente_categoria__id_componente__ref__componente
+    FOREIGN KEY (id_componente) REFERENCES componente(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_componente_categoria__id_categoria__ref__categoria
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT uq_componente_categoria__componente_categoria UNIQUE (id_componente, id_categoria)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS caracteristica_produto (
+  id                  INT NOT NULL AUTO_INCREMENT,
+  id_caracteristica   INT NOT NULL,
+  id_produto          INT NOT NULL,
+
+  CONSTRAINT pk_caracteristica_produto PRIMARY KEY (id),
+
+  CONSTRAINT fk_caracteristica_produto__id_caracteristica__ref__caracteristica
+    FOREIGN KEY (id_caracteristica) REFERENCES caracteristica(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_caracteristica_produto__id_produto__ref__produto
+    FOREIGN KEY (id_produto) REFERENCES produto(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT uq_caracteristica_produto__caracteristica_produto UNIQUE (id_caracteristica, id_produto)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS caracteristica_categoria (
+  id                  INT NOT NULL AUTO_INCREMENT,
+  id_caracteristica   INT NOT NULL,
+  id_categoria        INT NOT NULL,
+
+  CONSTRAINT pk_caracteristica_categoria PRIMARY KEY (id),
+
+  CONSTRAINT fk_caracteristica_categoria__id_caracteristica__ref__caracteristica
+    FOREIGN KEY (id_caracteristica) REFERENCES caracteristica(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_caracteristica_categoria__id_categoria__ref__categoria
+    FOREIGN KEY (id_categoria) REFERENCES categoria(id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT uq_caracteristica_categoria__caracteristica_categoria UNIQUE (id_caracteristica, id_categoria)
+)
+ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;
