@@ -1,3 +1,7 @@
+-- Script SQL para o sistema ElDorado
+-- Banco de dados: MariaDB 11.8
+-- Última modificação: 12/08/2025
+
 CREATE TABLE IF NOT EXISTS marca (
   id   INT NOT NULL AUTO_INCREMENT,
   nome VARCHAR(100) NOT NULL,
@@ -144,6 +148,7 @@ COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS usuario (
   id                       INT NOT NULL AUTO_INCREMENT,
+  is_admin                 BOOLEAN NOT NULL DEFAULT FALSE,
   login                    VARCHAR(100) NOT NULL,
   senha                    TEXT NOT NULL,
   nome                     VARCHAR(255) NOT NULL,
